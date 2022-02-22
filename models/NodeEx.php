@@ -1,4 +1,5 @@
 <?php
+
 // ДЛЯ ПОСТРОЕНИЯ ГРАФА
 class NodeEx {
     public $id;

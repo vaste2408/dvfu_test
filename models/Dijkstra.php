@@ -43,11 +43,11 @@ class Dijkstra {
 
     /**
      * Returns the solution in a human-readable style.
-     *
+     * @param boolean $longest
      * @return string
      */
-    public function getLiteralShortestPath() {
-        $path = $this->solve();
+    public function getLiteralPath($longest = true) {
+        $path = $this->solve($longest);
         $literal = '';
         foreach ( $path as $p ) {
             $literal .= "{$p->name} - ";
@@ -70,6 +70,17 @@ class Dijkstra {
         }
         $path[] = $this->getStartingNode();
         return array_reverse($path);
+    }
+
+    public function getLongestPath() {
+        $path = array();
+        $node = $this->getEndingNode();
+        while ( $node->getId() != $this->getStartingNode()->getId() ) {
+            $path[] = $node;
+            $node = $node->getPotentialFrom();
+        }
+        $path[] = $this->getStartingNode();
+        return $path;
     }
 
     /**
@@ -102,15 +113,18 @@ class Dijkstra {
 
     /**
      * Solves the algorithm and returns the shortest path as an array.
-     *
+     * @param boolean $longest
      * @return Array
      */
-    public function solve() {
+    public function solve($longest = true) {
         if (! $this->getStartingNode() || ! $this->getEndingNode()) {
             throw new Exception("Cannot solve the algorithm without both starting and ending nodes");
         }
         $this->calculatePotentials($this->getStartingNode());
-        $this->solution = $this->getShortestPath();
+        if ($longest)
+            $this->solution = $this->getShortestPath();
+        else
+            $this->solution = $this->getLongestPath();
         return $this->solution;
     }
 

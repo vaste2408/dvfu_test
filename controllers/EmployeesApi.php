@@ -97,14 +97,15 @@ class EmployeesApi extends Rest
 
     /**
      * Метод GET расписание
-     * http://ДОМЕН/employees/{id}/schedule
+     * http://ДОМЕН/employees/{id}/schedule + параметр day - день, на который надо сформировать расписание
      * @return string
      */
     public function schedule(){
         $id = array_shift($this->requestUri);
 
         if($id){
-            $schedule = $this->maxMeetingsDensity($id);
+            $day = $this->requestParams['day'];
+            $schedule = $this->maxMeetingsDensity($id, $day);
             if($schedule){
                 return $this->response($schedule, 200);
             }
@@ -128,7 +129,7 @@ class EmployeesApi extends Rest
         // определяем минимальное время
         $times = [];
         foreach ($my_meetings as $met) {
-            $times.push(date_create_from_format(self::_DATETIME_FORMAT, $met['starts_at']));
+            array_push($times, date_create_from_format(self::_DATETIME_FORMAT, $met['starts_at']));
         }
         $min_time_start = min($times);
 
@@ -137,36 +138,47 @@ class EmployeesApi extends Rest
         foreach ($my_meetings as $ind => $met) {
             $cur_el_start = date_create_from_format(self::_DATETIME_FORMAT, $met['starts_at'])->format('H:i');
             $cur_el_end = date_create_from_format(self::_DATETIME_FORMAT, $met['ends_at'])->format('H:i');
-            $prev_start = $cur_el_start;
-            $prev_el_end = $cur_el_end;
-            $new_node = new Node($met['id_meeting'], $met['name'], $cur_el_start, $cur_el_end);
+
+            $new_node = new NodeEx($met['id_meeting'], $met['name'], $cur_el_start, $cur_el_end);
             // СИТУАЦИИ:
             // Первые за день собрания начинаются одновременно
             if ($cur_el_start == $min_time_start){
-                $graph = new Graph();
+                $graph = new GraphEx();
                 $graph->add_node($new_node);
-                $graphs.push($graph);
+                array_push($graphs, $graph);
             }
             else{ //двинулись дальше
                 foreach ($graphs as $gr){ //в каждом из существующих графов надо проводить пути
-                    $add = false;
+                    $added = false;
                     foreach ($gr->nodes as $nd){ //каждый узел в графе может соединиться с новым элементом
                         if ($cur_el_start >= $nd->ends){ //время начала нового элемента больше или такое же как время окончания предыдущего
                             $gr->add_path($nd, $new_node);
-                            $add = true;
+                            $added = true;
                         }
                     }
-                    if ($add) //добавляем в граф только связанные точки
+                    if ($added) //добавляем в граф только связанные точки
                         $gr->add_node($new_node);
                 }
             }
         }
+        // в служебных целях для работы алгоритма добавим последюю общую ноду для всех нод всех графов
+        $finish = new NodeEx(-1, 'Ending point', date(self::_DATETIME_FORMAT), date(self::_DATETIME_FORMAT));
+        foreach ($graphs as $gr){
+            foreach ($gr->nodes as $nd){
+                $gr->add_path($nd, $finish);
+            }
+        }
+
         $maximal_length = 0; //текущий максимум
         $maximal_paths = []; //на случай одинаково длинных путей
 
         foreach ($graphs as $graph){
-            $algo = new Dijkstra ($graph); //ВОТ ЗДЕСЬ МАГИЯ
-            $max_path = $algo->maximal_path(); //Ищем самый длинный путь
+            if ($graph->get_size() == 0)
+                return [];
+            if ($graph->get_size() == 1)
+                return $graph->get_nodes();
+
+            $max_path = $this->calcLongestPath($graph)['route'];
             $max_count = count($max_path); //сколько узлов в пути
             if ($max_count >= $maximal_length){ //самый длинный путь из найденых
                 $maximal_paths[] = $max_path;
@@ -176,45 +188,40 @@ class EmployeesApi extends Rest
         return $maximal_paths; // искомое расписание с максимальной загрузкой сотрудника
 
     }
-    /*
-    $routes = array();
-    $routes[] = array('from'=>'a', 'to'=>'b', 'price'=>100);
-    $routes[] = array('from'=>'c', 'to'=>'d', 'price'=>300);
-    $routes[] = array('from'=>'b', 'to'=>'c', 'price'=>200);
-    $routes[] = array('from'=>'a', 'to'=>'d', 'price'=>900);
-    $routes[] = array('from'=>'b', 'to'=>'d', 'price'=>300);
 
-    printShortestPath('a', 'd', $routes);
-     */
+    function calcLongestPath($init_graph) {
+        //у скопипасченого алгоритма свой формат графа, поэтому приводим к нему
+        $graph = new Graph();
 
-    function printShortestPath($graph, $from_name, $to_name, $routes) {
-        foreach ($routes as $route) {
-            $from = $route['from'];
-            $to = $route['to'];
-            $price = $route['price'];
-            if (! array_key_exists($from, $graph->getNodes())) {
-                $from_node = new Node($from);
-                $graph->add($from_node);
-            } else {
-                $from_node = $graph->getNode($from);
+        foreach ($init_graph->get_nodes() as $node) {
+            if (count($node->paths)){
+                foreach ($node->paths as $route){
+                    $from = $route['from'];
+                    $to = $route['to'];
+                    if (! array_key_exists($from, $graph->getNodes())) {
+                        $from_node = new Node($from);
+                        $graph->add($from_node);
+                    } else {
+                        $from_node = $graph->getNode($from);
+                    }
+                    if (! array_key_exists($to, $graph->getNodes())) {
+                        $to_node = new Node($to);
+                        $graph->add($to_node);
+                    } else {
+                        $to_node = $graph->getNode($to);
+                    }
+                    $from_node->connect($to_node, 1);
+                }
             }
-            if (! array_key_exists($to, $graph->getNodes())) {
-                $to_node = new Node($to);
-                $graph->add($to_node);
-            } else {
-                $to_node = $graph->getNode($to);
-            }
-            $from_node->connect($to_node, $price);
         }
 
         $g = new Dijkstra($graph);
+        $from_name = $init_graph->get_root()->id;
+        $to_name =  $init_graph->get_finish()->id;
         $start_node = $graph->getNode($from_name);
         $end_node = $graph->getNode($to_name);
         $g->setStartingNode($start_node);
         $g->setEndingNode($end_node);
-        echo "From: " . $start_node->getId() . "\n";
-        echo "To: " . $end_node->getId() . "\n";
-        echo "Route: " . $g->getLiteralShortestPath() . "\n";
-        echo "Total: " . $g->getDistance() . "\n";
+        return array('route_string' => $g->getLiteralPath(), 'route' => $g->solve(true), 'length' => $g->getDistance());
     }
 }

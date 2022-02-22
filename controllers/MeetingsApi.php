@@ -1,6 +1,6 @@
 <?php
-//ДЛЯ СОБРАНИЯ
 
+//ДЛЯ СОБРАНИЯ
 class MeetingsApi extends Rest
 {
     public $apiName = 'meetings';
@@ -13,12 +13,14 @@ class MeetingsApi extends Rest
         parent::__construct();
     }
 
-    /**
-     * Метод GET
-     * Вывод списка всех записей
-     * http://ДОМЕН/meetings
-     * @return string
-     */
+    /*========================================================
+     * DISCLAIMER здесь не хватает валидации входящих параметров.
+     * Я о ней не забыл, просто не вижу смысла её здесь писать,
+     * поскольку способов валидации очень много,
+     * и какой выбрать имеено Вам - решать не мне
+     * (мы обычно используем form_validation)
+     ========================================================*/
+
     public function indexAction()
     {
         //TODO если есть доп нагрузка параметрами, то надо фильтровать список, но пока сойдёт и так
@@ -29,12 +31,6 @@ class MeetingsApi extends Rest
         return $this->response('Data not found', 404);
     }
 
-    /**
-     * Метод GET
-     * Просмотр отдельной записи (по id)
-     * http://ДОМЕН/meetings/1
-     * @return string
-     */
     public function viewAction()
     {
         //id должен быть первым параметром после /employees/x
@@ -49,18 +45,13 @@ class MeetingsApi extends Rest
         return $this->response('Data not found', 404);
     }
 
-    /**
-     * Метод POST
-     * Создание новой записи
-     * http://ДОМЕН/meetings + параметры запроса starts_at, ends_at
-     * @return string
-     */
     public function createAction()
     {
         $starts_at = $this->requestParams['starts_at'] ?? '';
         $ends_at = $this->requestParams['ends_at'] ?? '';
-        if($starts_at && $ends_at){
-            $new = new Meeting($starts_at, $ends_at);
+        $name = $this->requestParams['name'] ?? '';
+        if($starts_at && $ends_at && $name){
+            $new = new Meeting($starts_at, $ends_at, $name);
             if($this->MetDB->store($new)){
                 return $this->response('Data saved.', 200);
             }
@@ -68,12 +59,6 @@ class MeetingsApi extends Rest
         return $this->response("Saving error", 500);
     }
 
-    /**
-     * Метод PUT
-     * Обновление отдельной записи (по ее id)
-     * http://ДОМЕН/meetings/1 + параметры запроса starts_at, ends_at
-     * @return string
-     */
     public function updateAction()
     {
         $parse_url = parse_url($this->requestUri[0]);
@@ -85,22 +70,17 @@ class MeetingsApi extends Rest
 
         $starts_at = $this->requestParams['starts_at'] ?? $dbdata['starts_at'];
         $ends_at = $this->requestParams['ends_at'] ?? $dbdata['ends_at'];
+        $name = $this->requestParams['name'] ?? $dbdata['name'];
 
         // обновилось хоть одно из полей - можно апдейтить
-        if($starts_at != $dbdata['starts_at'] || $ends_at != $dbdata['ends_at']){
-            if($this->MetDB->update($id, array('starts_at' => $starts_at, 'ends_at' => $ends_at))){
+        if($starts_at != $dbdata['starts_at'] || $ends_at != $dbdata['ends_at'] || $name != $dbdata['name']){
+            if($this->MetDB->update_by_id($id, array('starts_at' => $starts_at, 'ends_at' => $ends_at, 'name' => $name))){
                 return $this->response('Data updated.', 200);
             }
         }
         return $this->response("Update error", 400);
     }
 
-    /**
-     * Метод DELETE
-     * Удаление отдельной записи (по ее id)
-     * http://ДОМЕН/meetings/1
-     * @return string
-     */
     public function deleteAction()
     {
         $parse_url = parse_url($this->requestUri[0]);
@@ -109,21 +89,51 @@ class MeetingsApi extends Rest
         if(!$id || !$this->MetDB->read_one($id)){
             return $this->response("Meeting with id = $id not found", 404);
         }
-        if($this->MetDB->delete($id)){
+        if($this->MetDB->delete_by_id($id)){
             return $this->response('Data deleted.', 200);
         }
         return $this->response("Delete error", 500);
     }
 
     /**
-     * Метод POST
-     * Внесение сотрудника на собрание
-     * http://ДОМЕН/meetings/{id}/add_employee + параметры запроса id_employee
+     * TODO по-идее, это scope другой сущности, но я не придумал, как это грамотно засунуть в идеологию REST.
+     * TODO к тому же эта функция нарушает приницы S и O
+     *
+     * CRD для сводной таблицы
+     * http://ДОМЕН/meetings/{id}/employees + параметры запроса id_employees:array
      * @return string
      */
-    public function add_employee(){
-        if ($this->method != 'POST')
-            return $this->response("Method should be of POST type", 404);
-
+    public function employees(){
+        switch ($this->method){
+            case 'GET':
+                $data = $this->ForumDB->read_all(array('id_meeting' => $this->requestParams['id_meeting']));
+                return $this->response($data, 200);
+                break;
+            case 'POST':
+                $employees = $this->requestParams['id_employees'];
+                if (!$employees || !count($employees))
+                    return $this->response("No data provided. Expecting array id_employees", 404);
+                $forum = new Forum($this->requestParams['id_meeting'], $employees);
+                $success = $this->ForumDB->store($forum);
+                if (!$success)
+                    return $this->response("Error saving data [" . implode(', ', $employees) . "]", 500);
+                return $this->response('Data saved.', 200);
+                break;
+            case 'DELETE':
+                $employees = $this->requestParams['id_employees'];
+                if (!$employees || !count($employees))
+                    return $this->response("No data provided. Expecting array id_employees", 404);
+                $success = true;
+                foreach ($employees as $emp){
+                    $success = $success && $this->ForumDB->delete_by_id($emp, false);
+                }
+                if (!$success)
+                    return $this->response("Error deleting data [" . implode(', ', $employees) . "]", 500);
+                return $this->response('Data deleted.', 200);
+                break;
+            default:
+                return $this->response("Unknown method type. Expecting GET / POST / DELETE", 404);
+                break;
+        }
     }
 }

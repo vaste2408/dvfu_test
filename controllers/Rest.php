@@ -3,7 +3,7 @@
 БАЗОВЫЙ КОНТРОЛЛЕР
  */
 
-abstract class Rest
+abstract class Rest implements iRestDeleteAction, iRestCreateAction, iRestUpdateAction, iRestViewAction, iRestIndexAction
 {
     protected $method = ''; //Get, post, put, delete
     protected $endpoint = ''; //index, view, create, update, delete или что-то своё
@@ -123,10 +123,4 @@ abstract class Rest
                 break;
         }
     }
-
-    abstract protected function indexAction();
-    abstract protected function viewAction();
-    abstract protected function createAction();
-    abstract protected function updateAction();
-    abstract protected function deleteAction();
 }

@@ -15,6 +15,6 @@ class MeetingDB extends DBObject
     }
 
     public function store(Meeting $met) {
-        return $this->create(array('starts_at' => $met->starts_at, 'ends_at' => $met->ends_at, 'active' => $met->active));
+        return $this->create(array('starts_at' => $met->starts_at, 'ends_at' => $met->ends_at, 'name' => $met->name, 'active' => $met->active));
     }
 }

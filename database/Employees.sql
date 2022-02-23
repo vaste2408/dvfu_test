@@ -1,5 +1,5 @@
 -- ----------------------------
--- Table structure for Employees
+-- ТАБЛИЦА ДЛЯ СОТРУДНИКОВ
 -- ----------------------------
 DROP TABLE IF EXISTS `Employees`;
 CREATE TABLE `Employees`  (

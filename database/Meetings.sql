@@ -1,5 +1,5 @@
 -- ----------------------------
--- Table structure for Meetings
+-- ТАБЛИЦА ДЛЯ СОБРАНИЙ
 -- ----------------------------
 DROP TABLE IF EXISTS `Meetings`;
 CREATE TABLE `Meetings`  (

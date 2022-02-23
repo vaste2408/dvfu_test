@@ -1,8 +1,8 @@
 <?php
+
 /**
 КЛАСС ПОДПИСАНИЯ СОТРУДНИКОВ НА СОБРАНИЯ
  */
-
 class Forum
 {
     public $meeting_id;

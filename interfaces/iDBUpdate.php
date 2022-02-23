@@ -1,12 +1,9 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: vasiliev.aa
- * Date: 21.02.2022
- * Time: 13:55
- */
 
+/**
+ * сохранение объекта в БД
+ */
 interface iDBUpdate
 {
-    public function update($id, $data = array());
+    public function update($where, $data = array());
 }

@@ -1,17 +1,12 @@
 <?php
+
 /**
- * Created by PhpStorm.
- * User: vasiliev.aa
- * Date: 21.02.2022
- * Time: 14:02
+ * КЛАСС СОБРАНИЙ ДЛЯ ВЗАИМОДЕЙСТВИЯ С БД
  */
-
-class MeetingDB extends DBObject
+class MeetingDB extends DBCRUD
 {
-    const table = 'Meetings';
-
-    public function __construct(){
-        parent::__construct(self::table);
+    public function __construct($table = 'Meetings'){
+        parent::__construct($table);
     }
 
     public function store(Meeting $met) {

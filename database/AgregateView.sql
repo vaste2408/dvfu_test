@@ -1,3 +1,6 @@
+-- ----------------------------
+-- СОЗДАНИЕ ПРЕДСТАВЛЕНИЯ ДЛЯ ВЫВОДА ПОЛНОЙ ИНФОРМАЦИИ О СОБРАНИЯХ И СОТРУДНИКАХ
+-- ----------------------------
 CREATE VIEW `AgregateView` AS SELECT DISTINCT
 	Forums.id_employee,
 	Forums.id_meeting,
@@ -15,4 +18,8 @@ FROM
 	INNER JOIN
 	Meetings
 	ON
-		Forums.id_meeting = Meetings.id;
+		Forums.id_meeting = Meetings.id
+  ORDER BY
+    Forums.id_employee,
+    Meetings.starts_at,
+    Meetings.ends_at;

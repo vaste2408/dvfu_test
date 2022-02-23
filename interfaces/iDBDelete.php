@@ -1,12 +1,9 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: vasiliev.aa
- * Date: 21.02.2022
- * Time: 13:55
- */
 
+/**
+ * удаление объекта из БД
+ */
 interface iDBDelete
 {
-    public function delete($id);
+    public function delete($where, $soft = true);
 }

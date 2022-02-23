@@ -1,5 +1,5 @@
 -- ----------------------------
--- Table structure for Forums
+-- ТАБЛИЦА ДЛЯ ЗАПИСИ СОТРУДНИКОВ НА СОБРАНИЕ
 -- ----------------------------
 DROP TABLE IF EXISTS `Forums`;
 CREATE TABLE `Forums`  (

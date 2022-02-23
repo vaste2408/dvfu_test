@@ -1,17 +1,12 @@
 <?php
+
 /**
- * Created by PhpStorm.
- * User: vasiliev.aa
- * Date: 21.02.2022
- * Time: 14:00
+ * КЛАСС СОТРУДНИКОВ ДЛЯ ВЗАИМОДЕЙСТВИЯ С БД
  */
-
-class EmployeeDB extends DBObject
+class EmployeeDB extends DBCRUD
 {
-    const table = 'Employees';
-
-    public function __construct(){
-        parent::__construct(self::table);
+    public function __construct($table = 'Employees'){
+        parent::__construct($table);
     }
 
     public function store(Employee $emp) {

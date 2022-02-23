@@ -1,6 +1,8 @@
 <?php
 
-// ДЛЯ ПОСТРОЕНИЯ ГРАФА
+/**
+ * ЭТО КЛАСС ДЛЯ УЗЛОВ ГРАФА.
+ */
 class NodeEx {
     public $id;
     public $name;

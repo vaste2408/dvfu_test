@@ -1,11 +1,8 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: vasiliev.aa
- * Date: 21.02.2022
- * Time: 13:54
- */
 
+/**
+ * чтение объекта из БД
+ */
 interface iDBRead
 {
     public function read($where = array(), $columns = "*");

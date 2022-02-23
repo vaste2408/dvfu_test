@@ -1,17 +1,12 @@
 <?php
+
 /**
- * Created by PhpStorm.
- * User: vasiliev.aa
- * Date: 21.02.2022
- * Time: 14:04
+ * КЛАСС ДЛЯ ПОДПИСИ СОТРУДНИКОВ НА СОБРАНИЕ В БД
  */
-
-class ForumDB extends DBObject
+class ForumDB extends DBCRUD
 {
-    const table = 'Forums';
-
-    public function __construct(){
-        parent::__construct(self::table);
+    public function __construct($table = 'Forums'){
+        parent::__construct($table);
     }
 
     public function store(Forum $forum) {

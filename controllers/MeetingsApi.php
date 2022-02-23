@@ -1,24 +1,24 @@
 <?php
 
-//ДЛЯ СОБРАНИЯ
+/**
+ * КОНТРОЛЛЕР СОБРАНИЙ
+ */
 class MeetingsApi extends Rest
 {
-    public $apiName = 'meetings';
     private $MetDB;
     private $ForumDB;
 
-    public function __construct() {
+    public function __construct($apiName = 'meetings') {
+        $this->apiName = $apiName;
         $this->MetDB = new MeetingDB();
         $this->ForumDB = new ForumDB(); //это коллекция собраний сотрудника
         parent::__construct();
     }
 
     /*========================================================
-     * DISCLAIMER здесь не хватает валидации входящих параметров.
+     * DISCLAIMER здесь не хватает валидации входящих параметров (как минимум)
      * Я о ней не забыл, просто не вижу смысла её здесь писать,
-     * поскольку способов валидации очень много,
-     * и какой выбрать имеено Вам - решать не мне
-     * (мы обычно используем form_validation)
+     * поскольку способов валидации очень много
      ========================================================*/
 
     public function indexAction()

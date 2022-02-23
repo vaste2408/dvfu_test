@@ -1,27 +1,27 @@
 <?php
 
-// ДЛЯ СОТРУДНИКА
+/**
+ * КОНТРОЛЛЕР СОТРУДНИКОВ
+ */
 class EmployeesApi extends Rest
 {
-    public $apiName = 'employees';
     private $EmpDB;
     private $ForumDB;
 
     const _DATE_FORMAT = "Y-m-d";
     const _DATETIME_FORMAT = "Y-m-d H:i:s";
 
-    public function __construct() {
+    public function __construct($apiName = 'employees') {
+        $this->apiName = $apiName;
         $this->EmpDB = new EmployeeDB();
         $this->ForumDB = new AgregateForumsDB(); //это коллекция собраний сотрудника
         parent::__construct();
     }
 
     /*========================================================
-     * DISCLAIMER здесь не хватает валидации входящих параметров.
+     * DISCLAIMER здесь не хватает валидации входящих параметров (как минимум)
      * Я о ней не забыл, просто не вижу смысла её здесь писать,
-     * поскольку способов валидации очень много,
-     * и какой выбрать имеено Вам - решать не мне
-     * (мы обычно используем form_validation)
+     * поскольку способов валидации очень много
      ========================================================*/
 
     public function indexAction()
@@ -96,9 +96,10 @@ class EmployeesApi extends Rest
     }
 
     /**
-     * Метод GET расписание
+     * Метод GET расписание сотрудника
      * http://ДОМЕН/employees/{id}/schedule + параметр day - день, на который надо сформировать расписание
-     * @return string
+     * @return false|string
+     * @throws Exception
      */
     public function schedule(){
         $id = array_shift($this->requestUri);
@@ -113,14 +114,15 @@ class EmployeesApi extends Rest
         return $this->response("Employee with id = $id not found", 404);
     }
 
-    //функция поиска самого плотного расписания
+    /**
+     * функция поиска самого плотного расписания
+     * @param $emp_id
+     * @param null $date
+     * @return array|null
+     * @throws Exception
+     */
     private function maxMeetingsDensity ($emp_id, $date = null) {
         $date = $date ? $date : date(self::_DATE_FORMAT); //не передали дату - берём "сегодня"
-        /*
-        функционально я этого не реализовывал, но будем для облегчения предполагать,
-        что все мероприятия сотрудника выстроены по возрастанию стартового времени,
-        чтобы не заморачиваться здесь с сортировкой (благо это легко делается индексом или сортировкой в БД)
-        */
         // получаем мероприятия на выбранную дату
         $my_meetings = $this->ForumDB->all_employee_meetings($emp_id, $date);
         if (count($my_meetings) == 0)
@@ -186,9 +188,14 @@ class EmployeesApi extends Rest
             }
         }
         return $maximal_paths; // искомое расписание с максимальной загрузкой сотрудника
-
     }
 
+    /**
+     * функция для поиска пути на основе скопипасченого алгоритма
+     * @param $init_graph
+     * @return array
+     * @throws Exception
+     */
     function calcLongestPath($init_graph) {
         //у скопипасченого алгоритма свой формат графа, поэтому приводим к нему
         $graph = new Graph();
@@ -222,6 +229,7 @@ class EmployeesApi extends Rest
         $end_node = $graph->getNode($to_name);
         $g->setStartingNode($start_node);
         $g->setEndingNode($end_node);
+        //TODO поскольку мы внедрили в графы общую финальную точку, по-идее, её надо оттуда убрать и уменьшить количество на 1
         return array('route_string' => $g->getLiteralPath(), 'route' => $g->solve(true), 'length' => $g->getDistance());
     }
 }

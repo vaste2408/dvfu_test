@@ -51,7 +51,10 @@ class MeetingsApi extends Rest
         $ends_at = $this->requestParams['ends_at'] ?? '';
         $name = $this->requestParams['name'] ?? '';
         if($starts_at && $ends_at && $name){
-            $new = new Meeting($starts_at, $ends_at, $name);
+            $new = new Meeting();
+            $new->setStartsAt($starts_at);
+            $new->setEndsAt($ends_at);
+            $new->setName($name);
             if($this->MetDB->store($new)){
                 return $this->response('Data saved.', 200);
             }
@@ -68,16 +71,27 @@ class MeetingsApi extends Rest
             return $this->response("Meeting with id = $id not found", 404);
         }
 
+        $met = new Meeting($id);
+
         $starts_at = $this->requestParams['starts_at'] ?? $dbdata['starts_at'];
         $ends_at = $this->requestParams['ends_at'] ?? $dbdata['ends_at'];
         $name = $this->requestParams['name'] ?? $dbdata['name'];
 
+        $met->setStartsAt($starts_at);
+        $met->setEndsAt($ends_at);
+        $met->setName($name);
+
+        if (!$met->check_completeness())
+            return $this->response("Update error, not all parameters given", 400);
+
         // обновилось хоть одно из полей - можно апдейтить
         if($starts_at != $dbdata['starts_at'] || $ends_at != $dbdata['ends_at'] || $name != $dbdata['name']){
-            if($this->MetDB->update_by_id($id, array('starts_at' => $starts_at, 'ends_at' => $ends_at, 'name' => $name))){
+            if($this->MetDB->change($met)){
                 return $this->response('Data updated.', 200);
             }
         }
+        else
+            return $this->response('No data changing received', 200);
         return $this->response("Update error", 400);
     }
 

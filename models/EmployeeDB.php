@@ -10,8 +10,14 @@ class EmployeeDB extends DBCRUD
     }
 
     public function store(Employee $emp) {
-        return $this->create(array('fio' => $emp->fio, 'department' => $emp->department, 'active' => $emp->active));
+        return $this->create(array('fio' => $emp->getFio(), 'department' => $emp->getDepartment(), 'active' => $emp->getActive()));
     }
 
-    // по-идее, надо аналогично делать методы на апдейт и делит, но для простоты далее в коде будет использоваться метод базового класса без построения объектов Employee
+    public function change(Employee $emp) {
+        if (!$emp->check_completeness())
+            return false;
+        return $this->update_by_id($emp->getId(), array('fio' => $emp->getFio(), 'department' => $emp->getDepartment()));
+    }
+
+    // по-идее, надо аналогично делать методы на делит, но для простоты далее в коде будет использоваться метод базового класса без построения объектов Employee
 }

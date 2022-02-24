@@ -41,6 +41,7 @@ class EmployeesApi extends Rest
         if($id){
             $emp = $this->EmpDB->read_one($id);
             if($emp){
+                //TODO если хотим здесь забиндить на модель вывода, то надо будет писать класс
                 return $this->response($emp, 200);
             }
         }
@@ -52,7 +53,9 @@ class EmployeesApi extends Rest
         $fio = $this->requestParams['fio'] ?? '';
         $department = $this->requestParams['department'] ?? '';
         if($fio && $department){
-            $emp = new Employee($fio, $department);
+            $emp = new Employee();
+            $emp->setDepartment($department);
+            $emp->setFio($fio);
             if($this->EmpDB->store($emp)){
                 return $this->response('Data saved.', 200);
             }
@@ -69,15 +72,26 @@ class EmployeesApi extends Rest
             return $this->response("Employee with id = $emp_id not found", 404);
         }
 
+        $emp = new Employee($emp_id);
+
         $fio = $this->requestParams['fio'] ?? $dbemp['fio'];
         $department = $this->requestParams['department'] ?? $dbemp['department'];
 
+        $emp->setFio($fio);
+        $emp->setDepartment($department);
+        $emp->setActive($dbemp['active']);
+
+        if (!$emp->check_completeness())
+            return $this->response("Update error, not all parameters given", 400);
+
         // обновилось хоть одно из полей - можно апдейтить
         if($fio != $dbemp['fio'] || $department != $dbemp['department']){
-            if($this->EmpDB->update_by_id($emp_id, array('fio' => $fio, 'department' => $department))){
+            if($this->EmpDB->change($emp)){
                 return $this->response('Data updated.', 200);
             }
         }
+        else
+            return $this->response('No data changing received', 200);
         return $this->response("Update error", 400);
     }
 
@@ -192,6 +206,7 @@ class EmployeesApi extends Rest
 
     /**
      * функция для поиска пути на основе скопипасченого алгоритма
+     * TODO её бы вынести во что-то типа хэлпера или утилитарного класса
      * @param $init_graph
      * @return array
      * @throws Exception
